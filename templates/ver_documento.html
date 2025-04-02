@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Documento: {{ nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="mb-4 d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0">
+            {% if tipo == 'texto' %}
+            <i class="fas fa-file-alt text-primary me-2"></i>
+            {% else %}
+            <i class="fas fa-file text-primary me-2"></i>
+            {% endif %}
+            {{ nombre }}
+        </h1>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+            <i class="fas fa-search me-1"></i> Volver al buscador
+        </a>
+    </div>
+    
+    {% if tipo == 'texto' %}
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <span>Contenido del documento</span>
+                
+                {% if fragmento_texto %}
+                <div>
+                    {% if posicion_fragmento > 0 %}
+                    <span class="badge bg-secondary me-2" id="info-posicion">
+                        {% if nombre.endswith('.pdf') %}
+                        <i class="fas fa-file-pdf me-1"></i> Página <span id="num-pagina">-</span>
+                        {% else %}
+                        <i class="fas fa-align-justify me-1"></i> Línea <span id="num-linea">-</span>
+                        {% endif %}
+                    </span>
+                    {% endif %}
+                    <button class="btn btn-sm btn-primary" id="boton-encontrar">
+                        <i class="fas fa-search-location me-1"></i> Encontrar texto resaltado
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <pre class="documento-texto" id="documento-texto">{{ contenido }}</pre>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if tipo == 'texto' and fragmento_texto %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const textoCompleto = document.getElementById('documento-texto').textContent;
+        const fragmentoBusqueda = `{{ fragmento_texto|safe }}`;
+        let posicion = textoCompleto.indexOf(fragmentoBusqueda);
+        
+        if (posicion >= 0) {
+            // Reemplazar el texto con una versión resaltada
+            const textoAntes = textoCompleto.substring(0, posicion);
+            const textoResaltado = textoCompleto.substring(posicion, posicion + fragmentoBusqueda.length);
+            const textoDespues = textoCompleto.substring(posicion + fragmentoBusqueda.length);
+            
+            document.getElementById('documento-texto').innerHTML = 
+                textoAntes + 
+                '<span class="texto-resaltado">' + textoResaltado + '</span>' + 
+                textoDespues;
+            
+            // Buscar el número de línea o página
+            let linea = 1;
+            let pagina = 1;
+            let textoBusqueda = textoCompleto.substring(0, posicion);
+            
+            // Buscar marcadores de página o línea
+            const marcadoresPagina = [...textoBusqueda.matchAll(/\[PAGINA:(\d+)\]/g)];
+            if (marcadoresPagina.length > 0) {
+                pagina = marcadoresPagina[marcadoresPagina.length - 1][1];
+                document.getElementById('num-pagina').textContent = pagina;
+            }
+            
+            const marcadoresLinea = [...textoBusqueda.matchAll(/\[LINEA:(\d+)\]/g)];
+            if (marcadoresLinea.length > 0) {
+                linea = marcadoresLinea[marcadoresLinea.length - 1][1];
+                document.getElementById('num-linea').textContent = linea;
+            } else {
+                // Contar saltos de línea si no hay marcadores
+                linea = textoBusqueda.split('\n').length;
+                if (document.getElementById('num-linea')) {
+                    document.getElementById('num-linea').textContent = linea;
+                }
+            }
+            
+            // Botón para desplazarse al texto resaltado
+            document.getElementById('boton-encontrar').addEventListener('click', function() {
+                const elementoResaltado = document.querySelector('.texto-resaltado');
+                elementoResaltado.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+            
+            // Auto-scroll al texto resaltado cuando se carga la página
+            setTimeout(function() {
+                const elementoResaltado = document.querySelector('.texto-resaltado');
+                elementoResaltado.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 500);
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .documento-texto {
+        white-space: pre-wrap;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        padding: 1rem;
+        max-height: 75vh;
+        overflow-y: auto;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        counter-reset: line;
+    }
+    
+    .texto-resaltado {
+        background-color: #ffeb3b;
+        padding: 2px 0;
+        font-weight: bold;
+        border-radius: 3px;
+    }
+    
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+</style>
+{% endblock %} 

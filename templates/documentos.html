@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Documentos Indexados{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1 class="h4 mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Documentos Indexados
+                    </h1>
+                    <div>
+                        {% if not indexacion_en_progreso %}
+                        <form action="{{ url_for('reiniciar_indexacion') }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-light" 
+                                    onclick="return confirm('¿Estás seguro de que deseas reiniciar la indexación? Esto limpiará el índice actual y volverá a procesar todos los documentos.')">
+                                <i class="fas fa-sync-alt me-1"></i> Reiniciar indexación
+                            </button>
+                        </form>
+                        {% endif %}
+                        <a href="{{ url_for('index') }}" class="btn btn-sm btn-light ms-2">
+                            <i class="fas fa-search me-1"></i> Volver al buscador
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if indexacion_en_progreso %}
+                <div id="estado-indexacion" data-en-progreso="true" class="alert alert-info mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm text-info me-2" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <div>
+                            <strong>Indexando documentos...</strong>
+                            <p class="mb-0">Esto puede tomar algunos minutos dependiendo del número de documentos.</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div id="estado-indexacion" data-en-progreso="false" style="display:none;"></div>
+                {% endif %}
+                
+                {% if documentos %}
+                    <p class="mb-3">
+                        Hay <strong>{{ documentos|length }}</strong> documentos indexados y disponibles para búsqueda.
+                    </p>
+                    
+                    <div class="list-group">
+                        {% for documento in documentos %}
+                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-file-{% if documento.endswith('.pdf') %}pdf{% 
+                                        elif documento.endswith('.docx') %}word{% 
+                                        elif documento.endswith('.xlsx') %}excel{% 
+                                        else %}text{% endif %} text-primary me-2"></i>
+                                    {{ documento }}
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <a href="{{ url_for('ver_documento', nombre=documento) }}" class="btn btn-sm btn-primary me-2" target="_blank">
+                                        <i class="fas fa-eye me-1"></i> Ver
+                                    </a>
+                                    <form action="{{ url_for('eliminar_documento', nombre=documento) }}" method="post" 
+                                          onsubmit="return confirm('¿Estás seguro de eliminar este documento del índice?');">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No hay documentos indexados actualmente. 
+                        <a href="{{ url_for('index') }}" class="alert-link">Sube algunos documentos</a> para comenzar.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Información adicional -->
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header bg-light">
+                <i class="fas fa-question-circle me-2"></i>
+                Acerca de los documentos
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-info-circle text-primary me-2"></i>¿Qué pasa al eliminar?</h5>
+                        <p>
+                            Al eliminar un documento, se quita del índice de búsqueda pero no se borra el archivo 
+                            original del sistema. El documento ya no aparecerá en los resultados de búsqueda.
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-cog text-primary me-2"></i>Administración</h5>
+                        <p>
+                            Puedes subir nuevos documentos desde la 
+                            <a href="{{ url_for('index') }}">página principal</a>.
+                            Los documentos se indexan automáticamente después de subirlos.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuración avanzada -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <i class="fas fa-cogs me-2"></i> Configuración avanzada
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('ajustar_tamano_fragmentos') }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="tamano_fragmento" class="form-label">Tamaño de fragmento</label>
+                            <input type="number" class="form-control" id="tamano_fragmento" name="tamano_fragmento" 
+                                   value="1000" min="100" max="5000" required>
+                            <div class="form-text">Mayor tamaño = fragmentos más largos (100-5000)</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="solapamiento" class="form-label">Solapamiento</label>
+                            <input type="number" class="form-control" id="solapamiento" name="solapamiento" 
+                                   value="300" min="10" max="1000" required>
+                            <div class="form-text">Palabras compartidas entre fragmentos</div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" 
+                            onclick="return confirm('¿Estás seguro? Esto reiniciará la indexación con los nuevos parámetros.')">
+                        <i class="fas fa-save me-1"></i> Aplicar y reiniciar indexación
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Actualizar estado de indexación periódicamente
+    function actualizarEstado() {
+        fetch('/estado')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.indexacion_en_progreso) {
+                    // Recargar la página cuando termina la indexación
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Error al actualizar estado:', error));
+    }
+
+    // Verificar si la indexación está en progreso usando un atributo de datos
+    const estado = document.getElementById('estado-indexacion');
+    if (estado && estado.dataset.enProgreso === 'true') {
+        // Verificar estado cada 5 segundos
+        setInterval(actualizarEstado, 5000);
+    }
+</script>
+{% endblock %} 

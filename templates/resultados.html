@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}Resultados de búsqueda - {{ consulta }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Encabezado de resultados -->
+        <div class="mb-4">
+            <h1 class="h2">
+                <i class="fas fa-search text-primary me-2"></i>
+                Resultados de búsqueda
+            </h1>
+            <p class="lead">
+                <strong>Consulta:</strong> {{ consulta }}
+            </p>
+            <hr>
+        </div>
+        
+        <!-- Panel de respuesta principal -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comment-dots me-2"></i>
+                        Respuesta
+                    </h5>
+                    <a href="{{ url_for('index') }}" class="btn btn-sm btn-light">
+                        <i class="fas fa-search me-1"></i> Nueva búsqueda
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if fragmentos %}
+                <div class="alert alert-success mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Se encontraron {{ fragmentos|length }} resultados relevantes para tu consulta.</strong>
+                    <p class="mb-0 mt-1">Revisa las fuentes consultadas a continuación para ver la información detallada.</p>
+                </div>
+                {% else %}
+                <div class="alert alert-warning mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>No se encontraron resultados para tu consulta.</strong>
+                    <p class="mb-0 mt-1">Intenta con diferentes términos o sube más documentos para ampliar la búsqueda.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if fragmentos %}
+        <!-- Lista de fragmentos utilizados -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Fuentes consultadas
+                    </h5>
+                    <span class="badge bg-light text-primary rounded-pill">
+                        {{ fragmentos|length }} resultados
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for fragmento in fragmentos %}
+                    <div class="card shadow-sm mb-3 {% if fragmento.es_bd %}resultado-bd{% elif fragmento.documento.endswith('.xlsx') %}resultado-excel{% endif %}">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-{% if fragmento.es_bd %}database{% 
+                                    elif fragmento.documento.endswith('.pdf') %}file-pdf{% 
+                                    elif fragmento.documento.endswith('.docx') %}file-word{% 
+                                    elif fragmento.documento.endswith('.xlsx') %}file-excel{% 
+                                    else %}file-text{% endif %} text-primary me-2"></i>
+                                {% if fragmento.es_bd %}
+                                    Tabla PostgreSQL: {{ fragmento.tabla }}
+                                {% else %}
+                                    {{ fragmento.documento }}
+                                {% endif %}
+                            </div>
+                            <div>
+                                {% if not fragmento.es_bd %}
+                                <a href="{{ url_for('ver_documento', nombre=fragmento.documento, fragmento_texto=fragmento.texto[:200]) }}" class="btn btn-sm btn-primary me-1" target="_blank">
+                                    <i class="fas fa-eye me-1"></i> Abrir en documento
+                                </a>
+                                {% endif %}
+                                {% if fragmento.metadatos.posicion %}
+                                <span class="badge bg-secondary me-1">
+                                    {% if fragmento.es_bd %}
+                                        <i class="fas fa-database me-1"></i> Tabla: {{ fragmento.tabla }}
+                                        {% if fragmento.registro %}
+                                            (Registro {{ fragmento.registro }})
+                                        {% endif %}
+                                    {% elif fragmento.documento.endswith('.pdf') or fragmento.documento.endswith('.docx') %}
+                                        <i class="fas fa-{% if fragmento.documento.endswith('.pdf') %}file-pdf{% else %}file-word{% endif %} me-1"></i> Página {{ fragmento.metadatos.posicion }}
+                                    {% else %}
+                                        <i class="fas fa-align-justify me-1"></i> Línea {{ fragmento.metadatos.posicion }}
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                                <div class="badge-container ms-1">
+                                    <span class="badge bg-primary rounded-pill">
+                                        Similitud: {{ "%.2f" % (fragmento.similitud * 100) }}%
+                                    </span>
+                                    {% if fragmento.num_coincidencias > 0 %}
+                                    <span class="badge bg-success rounded-pill mt-1">
+                                        <i class="fas fa-check-circle me-1"></i> {{ fragmento.num_coincidencias }} coincidencia{{ 's' if fragmento.num_coincidencias > 1 else '' }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="fragmento-texto mb-2" data-palabras-clave="{{ fragmento.palabras_clave|join(',') }}">
+                                {{ fragmento.texto | nl2br }}
+                            </div>
+                            {% if fragmento.documento.endswith('.xlsx') %}
+                            <div class="mt-1 text-muted">
+                                <small>
+                                    <i class="fas fa-info-circle me-1"></i> Contenido de hoja de cálculo. Los datos mostrados pueden estar estructurados en filas y columnas.
+                                </small>
+                            </div>
+                            {% elif fragmento.es_bd %}
+                            <div class="mt-1 text-muted">
+                                <small>
+                                    <i class="fas fa-database me-1"></i> Datos extraídos de la tabla <strong>{{ fragmento.tabla }}</strong> de PostgreSQL.
+                                    {% if fragmento.registro %}
+                                    Este resultado corresponde al registro #{{ fragmento.registro }}.
+                                    {% endif %}
+                                </small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if fragmento.palabras_clave %}
+                            <div class="mt-2 palabras-coincidentes">
+                                <small>
+                                    <i class="fas fa-search me-1"></i> <strong>Coincidencias encontradas:</strong>
+                                    {% for palabra in fragmento.palabras_clave %}
+                                    <span class="badge bg-light text-primary me-1">{{ palabra }}</span>
+                                    {% endfor %}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="mb-4">
+            <div class="mb-2">
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-search me-1"></i> Nueva consulta
+                </a>
+            </div>
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-question-circle me-2"></i> Consulta
+                </div>
+                <div class="card-body">
+                    <p class="mb-0" id="consulta-original">{{ consulta }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos para los fragmentos de texto */
+    .fragmento-texto {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        background-color: #f9f9f9;
+        padding: 1rem;
+        border-radius: 6px;
+        border-left: 4px solid #007bff;
+        white-space: pre-line;
+    }
+    
+    /* Color principal consistente */
+    .text-primary {
+        color: #007bff !important;
+    }
+    
+    /* Contenedor de insignias (badges) */
+    .badge-container {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Contenedor para detalles de similitud */
+    .similitud-detalle {
+        display: flex;
+        gap: 5px;
+    }
+    
+    /* Formato especial para resultados de Excel */
+    .resultado-excel .fragmento-texto {
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+    
+    /* Formato especial para resultados de PostgreSQL */
+    .resultado-bd .fragmento-texto {
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.9rem;
+        background-color: #f5f5f5;
+        border-left: 4px solid #336791; /* Color azul de PostgreSQL */
+    }
+    
+    /* Resaltado para nombres de campos en PostgreSQL */
+    .fragmento-texto .campo-bd {
+        color: #336791;
+        font-weight: bold;
+    }
+    
+    /* Resaltar registros de BD */
+    .fragmento-texto .registro-bd {
+        background-color: #e9ecef;
+        padding: 4px;
+        margin: 8px 0;
+        border-radius: 4px;
+        display: block;
+    }
+    
+    /* Estilos para encabezados de tarjeta */
+    .card-header {
+        background-color: #f8f9fa;
+    }
+    
+    /* Resaltado para términos encontrados */
+    .termino-match {
+        background-color: rgba(255, 235, 59, 0.4);
+        padding: 2px 0;
+        border-radius: 3px;
+    }
+    
+    /* Resaltado especial para palabras clave exactas */
+    .palabra-clave-match {
+        background-color: rgba(76, 175, 80, 0.3);
+        padding: 2px 0;
+        border-radius: 3px;
+        font-weight: bold;
+    }
+    
+    /* Estilos para las etiquetas de palabras clave */
+    .palabras-coincidentes .badge {
+        padding: 4px 8px;
+        border: 1px solid #e9ecef;
+    }
+</style>
+
+
+<script>
+    /**
+     * Script para mejorar la visualización de resultados de búsqueda
+     * 
+     * Este script implementa tres funcionalidades principales:
+     * 1. Resalta automáticamente los términos importantes de la consulta original 
+     *    (nombres propios, números, y palabras clave exactas)
+     * 2. Aplica formatos especiales a los resultados de archivos Excel para 
+     *    mejorar la visualización de datos tabulares
+     * 3. Resalta coincidencias exactas de palabras clave en los resultados
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+        /**
+         * Extrae y resalta términos específicos y palabras clave en los resultados
+         * 
+         * Identifica términos importantes como:
+         * - Nombres propios (palabras que comienzan con mayúscula)
+         * - Términos con números
+         * - Palabras clave específicas de la consulta
+         */
+        function resaltarTerminos() {
+            // Obtener texto de la consulta original
+            const consulta = document.getElementById('consulta-original').textContent;
+            if (!consulta) return;
+            
+            // Extraer términos importantes y palabras clave
+            let terminos = [];
+            const palabras = consulta.split(/\s+/);
+            
+            // 1. Extraer nombres propios y términos con números
+            palabras.forEach(palabra => {
+                const palabraLimpia = palabra.replace(/[.,;:?!()[\]{}""']/g, '');
+                
+                // Detectar nombres propios (comienzan con mayúscula)
+                if (palabraLimpia.length > 1 && /^[A-Z]/.test(palabraLimpia)) {
+                    terminos.push(palabraLimpia);
+                }
+                
+                // Detectar términos con números
+                if (palabraLimpia.length > 1 && /\d/.test(palabraLimpia)) {
+                    terminos.push(palabraLimpia);
+                }
+            });
+            
+            // 2. Extraer palabras clave significativas (más de 3 caracteres)
+            palabras.forEach(palabra => {
+                const palabraLimpia = palabra.replace(/[.,;:?!()[\]{}""']/g, '').toLowerCase();
+                
+                // Palabras clave significativas
+                if (palabraLimpia.length > 3 && !terminos.includes(palabraLimpia) && !esStopWord(palabraLimpia)) {
+                    terminos.push(palabraLimpia);
+                }
+            });
+            
+            // 3. Resaltar términos y palabras clave específicas en cada fragmento
+            const fragmentosTexto = document.querySelectorAll('.fragmento-texto');
+            
+            fragmentosTexto.forEach(fragmentoTexto => {
+                // Obtener palabras clave específicas para este fragmento desde el atributo data
+                const palabrasClaveEspecificas = fragmentoTexto.dataset.palabrasClave 
+                    ? fragmentoTexto.dataset.palabrasClave.split(',') 
+                    : [];
+                
+                // Primero resaltar palabras clave específicas (las encontradas en el backend)
+                let html = fragmentoTexto.innerHTML;
+                
+                // Primero reemplazar las palabras clave específicas (coincidencias exactas)
+                palabrasClaveEspecificas.forEach(palabra => {
+                    if (!palabra) return;
+                    const regex = new RegExp('\\b(' + palabra + ')\\b', 'gi');
+                    html = html.replace(regex, '<span class="palabra-clave-match">$1</span>');
+                });
+                
+                // Luego resaltar otros términos importantes
+                terminos.forEach(termino => {
+                    // No volver a resaltar palabras que ya fueron marcadas como palabras clave
+                    if (palabrasClaveEspecificas.includes(termino.toLowerCase())) return;
+                    
+                    // Usar expresión regular para encontrar palabras completas
+                    const regex = new RegExp('\\b(' + termino + ')\\b', 'gi');
+                    html = html.replace(regex, '<span class="termino-match">$1</span>');
+                });
+                
+                fragmentoTexto.innerHTML = html;
+            });
+        }
+        
+        /**
+         * Comprueba si una palabra es una stop word (palabra común)
+         */
+        function esStopWord(palabra) {
+            const stopWords = [
+                'a', 'al', 'algo', 'algunas', 'algunos', 'ante', 'antes', 'como', 'con', 'contra',
+                'cual', 'cuando', 'de', 'del', 'desde', 'donde', 'durante', 'el', 'ella',
+                'entre', 'era', 'eres', 'es', 'esa', 'ese', 'eso', 'esta', 'está', 'este',
+                'esto', 'estos', 'hay', 'la', 'las', 'le', 'les', 'lo', 'los', 'me', 'mi', 'mis',
+                'mucho', 'muchos', 'muy', 'más', 'ni', 'no', 'nos', 'para', 'pero', 'por',
+                'porque', 'que', 'qué', 'se', 'si', 'sin', 'sobre', 'son', 'su', 'sus', 'también',
+                'tan', 'tanto', 'te', 'tiene', 'tienen', 'un', 'una', 'uno', 'unos', 'y', 'ya'
+            ];
+            return stopWords.includes(palabra);
+        }
+        
+        /**
+         * Aplica formato especial a resultados de archivos Excel
+         * 
+         * Identifica resultados que provienen de archivos Excel y les aplica
+         * una clase CSS especial para mejorar su visualización.
+         */
+        function formatearResultadosExcel() {
+            document.querySelectorAll('.card').forEach(card => {
+                const header = card.querySelector('.card-header');
+                if (header && header.innerHTML.includes('file-excel')) {
+                    card.classList.add('resultado-excel');
+                }
+            });
+        }
+        
+        // Ejecutar las funciones de mejora visual
+        formatearResultadosExcel();
+        resaltarTerminos();
+    });
+</script>
+{% endblock %} 

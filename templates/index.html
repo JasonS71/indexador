@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Buscador Inteligente de Documentos{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">
+                    <i class="fas fa-search text-primary me-2"></i>
+                    Indexador
+                </h1>
+                
+                <!-- Estado de indexación -->
+                <div id="estado-indexacion" data-en-progreso="{% if indexacion_en_progreso %}true{% else %}false{% endif %}" class="alert {% if indexacion_en_progreso %}alert-info{% else %}alert-success{% endif %} mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            {% if indexacion_en_progreso %}
+                                <div class="spinner-border spinner-border-sm text-info me-2" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                                <div>
+                                    <strong>Indexando documentos...</strong>
+                                    <p class="mb-0">Esto puede tomar algunos minutos dependiendo del número de documentos.</p>
+                                </div>
+                            {% else %}
+                                <div>
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Sistema listo.</strong>
+                                    <p class="mb-0">{{ num_docs_indexados }} documentos indexados y listos para consulta.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% if not indexacion_en_progreso %}
+                        <form action="{{ url_for('reiniciar_indexacion') }}" method="post">
+                            <button type="submit" class="btn btn-sm btn-outline-primary" 
+                                    onclick="return confirm('¿Estás seguro de que deseas reiniciar la indexación? Esto limpiará el índice actual y volverá a procesar todos los documentos.')">
+                                <i class="fas fa-sync-alt me-1"></i> Reiniciar indexación
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Formulario de búsqueda -->
+                <form action="{{ url_for('buscar') }}" method="post">
+                    <div class="mb-4">
+                        <label for="consulta" class="form-label">¿Qué deseas preguntar?</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control form-control-lg" id="consulta" name="consulta" 
+                                   placeholder="Escribe tu pregunta o consulta..." required>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            Ejemplo: "¿Cuáles son los requisitos del proyecto?", "¿Qué tecnologías se utilizan?", etc.
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Subir documentos -->
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <i class="fas fa-upload me-2"></i> Subir nuevo documento
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('subir_archivo') }}" method="post" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="archivo" class="form-label">Selecciona un archivo (.pdf, .docx, .xlsx, .txt)</label>
+                                <input class="form-control" type="file" id="archivo" name="archivo" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-cloud-upload-alt me-1"></i> Subir y procesar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Configuración avanzada -->
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <i class="fas fa-cogs me-2"></i> Configuración avanzada
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('ajustar_tamano_fragmentos') }}" method="post">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="tamano_fragmento" class="form-label">Tamaño de fragmento</label>
+                                    <input type="number" class="form-control" id="tamano_fragmento" name="tamano_fragmento" 
+                                           value="{{ DEFAULT_FRAGMENT_SIZE|default(2500) }}" min="100" max="5000" required>
+                                    <div class="form-text">Mayor tamaño = fragmentos más largos (100-5000)</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="solapamiento" class="form-label">Solapamiento</label>
+                                    <input type="number" class="form-control" id="solapamiento" name="solapamiento" 
+                                           value="{{ DEFAULT_OVERLAP|default(300) }}" min="10" max="1000" required>
+                                    <div class="form-text">Caracteres compartidos entre fragmentos</div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" 
+                                    onclick="return confirm('¿Estás seguro? Esto reiniciará la indexación con los nuevos parámetros.')">
+                                <i class="fas fa-save me-1"></i> Aplicar y reiniciar indexación
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Configuración de PostgreSQL -->
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <i class="fas fa-database me-2"></i> Conexión a PostgreSQL
+                        {% if bd_indexacion_completada %}
+                        <span class="badge bg-success ms-2">Conectado</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('configurar_bd') }}" method="post">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="host" class="form-label">Host</label>
+                                    <input type="text" class="form-control" id="host" name="host" 
+                                           value="{{ pg_config.host|default('localhost') }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="port" class="form-label">Puerto</label>
+                                    <input type="number" class="form-control" id="port" name="port" 
+                                           value="{{ pg_config.port|default(5432) }}" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="dbname" class="form-label">Nombre de BD</label>
+                                    <input type="text" class="form-control" id="dbname" name="dbname" 
+                                           value="{{ pg_config.dbname|default('') }}" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="user" class="form-label">Usuario</label>
+                                    <input type="text" class="form-control" id="user" name="user" 
+                                           value="{{ pg_config.user|default('') }}" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="password" class="form-label">Contraseña</label>
+                                    <input type="password" class="form-control" id="password" name="password" 
+                                           value="{{ pg_config.password|default('') }}">
+                                </div>
+                            </div>
+                            
+                            
+                            
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Se indexarán automáticamente todas las tablas de la base de datos especificada.
+                                <p class="small mb-0 mt-1">Cada tabla será procesada y fragmentada para permitir búsquedas en su contenido.</p>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary" 
+                                    onclick="return confirm('¿Estás seguro de configurar la conexión a PostgreSQL? Esto intentará conectarse a la base de datos e indexará todas sus tablas.')">
+                                <i class="fas fa-database me-1"></i> Configurar y conectar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información adicional -->
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header bg-light">
+                <i class="fas fa-info-circle me-2"></i> Acerca de este buscador
+            </div>
+            <div class="card-body">
+                <p>
+                    Este sistema permite buscar información específica en documentos de diferentes formatos y bases de datos PostgreSQL.
+                    A diferencia de los buscadores tradicionales, puedes hacer preguntas en lenguaje natural y 
+                    recibir respuestas directas extraídas de los documentos y datos indexados.
+                </p>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-file-alt text-primary me-2"></i>Fuentes soportadas</h5>
+                        <ul>
+                            <li>Documentos PDF (.pdf)</li>
+                            <li>Documentos Word (.docx)</li>
+                            <li>Hojas de cálculo Excel (.xlsx)</li>
+                            <li>Archivos de texto (.txt)</li>
+                            <li>Bases de datos PostgreSQL</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-search text-primary me-2"></i>Tipos de consultas</h5>
+                        <ul>
+                            <li>Preguntas específicas</li>
+                            <li>Búsqueda por tema</li>
+                            <li>Consultas de información</li>
+                            <li>Búsqueda en datos estructurados</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Actualizar estado de indexación periódicamente
+    function actualizarEstado() {
+        fetch('/estado')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.indexacion_en_progreso) {
+                    // Recargar la página cuando termina la indexación
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Error al actualizar estado:', error));
+    }
+
+    // Verificar si la indexación está en progreso usando un atributo de datos
+    const estado = document.getElementById('estado-indexacion');
+    if (estado && estado.dataset.enProgreso === 'true') {
+        // Verificar estado cada 5 segundos
+        setInterval(actualizarEstado, 5000);
+    }
+</script>
+{% endblock %} 

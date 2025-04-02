@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Página no encontrada - Error 404{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center text-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-5">
+                <h1 class="display-1 text-primary mb-4">
+                    <i class="fas fa-search"></i> 404
+                </h1>
+                <h2 class="mb-4">Página no encontrada</h2>
+                <p class="lead mb-4">
+                    Lo sentimos, pero la página que estás buscando no existe o ha sido movida.
+                </p>
+                <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-home me-2"></i> Volver al inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,92 @@
+/* Estilos personalizados para el Indexador y Buscador de Documentos */
+
+/* Estilos generales */
+body {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+/* Personalización de tarjetas */
+.card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    border-bottom: none;
+    font-weight: 600;
+}
+
+/* Estilos para la barra de navegación */
+.navbar {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+/* Estilos para secciones */
+.section-title {
+    border-left: 4px solid #007bff;
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Estilos para búsqueda y resultados */
+.consulta-destacada {
+    background-color: #e9f5ff;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-style: italic;
+}
+
+.fragmento-texto {
+    background-color: #f8f9fa;
+    border-left: 3px solid #007bff;
+    padding: 0.75rem;
+    border-radius: 0 0.25rem 0.25rem 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.badge-similitud {
+    background-color: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    font-weight: 600;
+}
+
+/* Formularios */
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Animaciones */
+.fade-in {
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+} 
