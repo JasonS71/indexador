@@ -56,7 +56,7 @@ proyecto/
 
 ### Clonar el Repositorio
 ```bash
-git clone https://github.com/tu-usuario/indexador.git
+git clone https://github.com/JasonS71/indexador
 cd indexador
 ```
 
