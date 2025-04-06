@@ -6,10 +6,38 @@ Sistema de búsqueda inteligente que permite indexar y buscar información en do
 ## Características Principales
 - Soporte para múltiples formatos de documentos (PDF, DOCX, TXT, XLSX)
 - Conexión e indexación de tablas PostgreSQL
-- Interfaz web
+- Interfaz web intuitiva para gestión de documentos
 - Visualización de resultados con contexto (número de página/línea)
 - Resaltado automático de coincidencias y términos relevantes
 - Configuración ajustable de parámetros de indexación
+- Visualización especializada para contenido de Excel y PostgreSQL
+
+## Guía Visual
+A continuación se muestran los pasos principales para utilizar el sistema:
+
+### 1. Interfaz Principal
+Una vez inicializado el proyecto, se mostrará la siguiente interfaz:
+
+<!-- IMAGEN 1: Captura de pantalla de la interfaz principal del sistema -->
+![Interfaz Principal](readme_imagenes/Interfaz%20Principal.png)
+
+### 2. Conexión a PostgreSQL
+Para conectar a una base de datos PostgreSQL, complete el formulario como se muestra:
+
+<!-- IMAGEN 2: Captura de pantalla del formulario de conexión a PostgreSQL -->
+![Conexión a PostgreSQL](readme_imagenes/Conexion%20Postgres.png)
+
+### 3. Subida de Documentos
+Para subir documentos al sistema, utilice la sección de subida de archivos:
+
+<!-- IMAGEN 3: Captura de pantalla de la sección para subir documentos -->
+![Subida de Documentos](readme_imagenes/Subir%20documentos.png)
+
+### 4. Resultados de Búsqueda
+Los resultados de búsqueda se mostrarán con las coincidencias resaltadas:
+
+<!-- IMAGEN 4: Captura de pantalla de los resultados de búsqueda -->
+![Resultados de Búsqueda](readme_imagenes/Resultado%20de%20Busqueda.png)
 
 ## Tecnologías Utilizadas
 - Python 3.9+
@@ -47,6 +75,7 @@ proyecto/
 ├── documentos_por_defecto/     # Documentos incluidos por defecto
 └── indexados_datos/            # Directorio para datos indexados
 ```
+
 ## Requisitos Previos
 - Python 3.9 o superior
 - Pip (gestor de paquetes de Python)
@@ -56,7 +85,7 @@ proyecto/
 
 ### Clonar el Repositorio
 ```bash
-git clone https://github.com/JasonS71/indexador
+git clone https://github.com/JasonS71/indexador.git
 cd indexador
 ```
 
@@ -68,6 +97,8 @@ python -m venv venv
 # Activar entorno virtual
 # En Windows:
 venv\Scripts\activate
+# En macOS/Linux:
+source venv/bin/activate
 ```
 
 ### Instalar Dependencias
@@ -119,3 +150,29 @@ Puedes configurar la conexión a PostgreSQL directamente desde la interfaz web:
 2. Haz clic en "Configurar y conectar"
 
 El sistema automáticamente detectará todas las tablas disponibles en la base de datos y las indexará para su búsqueda.
+
+## Funcionamiento Técnico
+1. **Procesamiento de Documentos**
+   - Los documentos se procesan según su formato específico
+   - Se extraen texto y metadatos (autor, fecha, etc.)
+   - Se divide el texto en fragmentos con solapamiento
+   - Se preserva información de posición (página/línea)
+
+2. **Indexación**
+   - Cada fragmento se convierte en un vector de embedding usando Sentence-Transformers
+   - Los embeddings, texto original y metadatos se almacenan de forma eficiente
+   - El sistema mantiene un índice de todos los documentos procesados
+
+3. **Búsqueda Híbrida**
+   - La consulta se procesa para extraer palabras clave importantes
+   - Se genera un embedding de la consulta
+   - Se compara con los embeddings almacenados (similitud coseno)
+   - Se verifica la presencia de palabras clave exactas
+   - Se combina la similitud semántica (70%) con coincidencias de palabras clave (30%)
+   - Se devuelven los fragmentos más relevantes ordenados por puntuación combinada
+
+## Licencia
+[MIT](LICENSE)
+
+## Contacto
+Para reportar problemas o sugerir mejoras, por favor abrir un issue en el repositorio de GitHub.
