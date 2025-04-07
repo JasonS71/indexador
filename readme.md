@@ -170,9 +170,3 @@ El sistema automáticamente detectará todas las tablas disponibles en la base d
    - Se verifica la presencia de palabras clave exactas
    - Se combina la similitud semántica (70%) con coincidencias de palabras clave (30%)
    - Se devuelven los fragmentos más relevantes ordenados por puntuación combinada
-
-## Licencia
-[MIT](LICENSE)
-
-## Contacto
-Para reportar problemas o sugerir mejoras, por favor abrir un issue en el repositorio de GitHub.
